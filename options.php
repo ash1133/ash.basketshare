@@ -7,7 +7,7 @@ use Bitrix\Main\Loader;
 use Bitrix\Main\Config\Option;
 
 $module_id = 'ash.basketshare';
-
+$ashBasketShareRight = $APPLICATION->GetGroupRight($module_id);
 Loc::loadMessages(__FILE__);
 Loader::includeModule($module_id);
 
@@ -34,7 +34,6 @@ if ($request->isPost() && $request['Update'] && check_bitrix_sessid()) {
 
     // Сохранение прав доступа
     $obModule = CModule::CreateModuleObject($module_id);
-    $obModule->SaveGroupRight();
 }
 
 $linkLifetime = Option::get($module_id, 'link_lifetime', 7);

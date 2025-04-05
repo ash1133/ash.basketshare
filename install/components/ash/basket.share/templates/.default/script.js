@@ -2,7 +2,8 @@ class BasketShare {
     constructor(params) {
         this.componentPath = params.componentPath || ''
         this.popupId = params.popupId || 'basket-share-popup-popup'
-        this.buttonId = params.buttonId || 'basket-share-popup-button'
+        this.buttonSelector = params.buttonSelector || 'basket-share-popup-button'
+        this.buttonContainerSelector = params.buttonContainerSelector || 'basket-share-popup-button-container'
         this.linkInputId = params.linkInputId || 'basket-share-popup-link'
         this.copyButtonId = params.copyButtonId || 'basket-share-popup-copy'
         this.closeButtonId = params.closeButtonId || 'basket-share-popup-close'
@@ -10,10 +11,13 @@ class BasketShare {
         this.errorId = params.errorId || 'basket-share-popup-error'
         this.successId = params.successId || 'basket-share-popup-copy-success'
         this.signedParameters = params.signedParameters || ''
+        this.moveButtonToBasket = params.moveButtonToBasket || false
+        this.moveButtonPlaceSelector = params.moveButtonPlaceSelector || false
 
         this.node = {
             popup: document.getElementById(this.popupId),
-            button: document.getElementById(this.buttonId),
+            button: document.querySelector(`[data-entity=${this.buttonSelector}]`),
+            buttonContainer: document.querySelectorAll(`[data-entity=${this.buttonContainerSelector}]`),
             linkInput: document.getElementById(this.linkInputId),
             copyButton: document.getElementById(this.copyButtonId),
             closeButton: document.getElementById(this.closeButtonId),
@@ -21,7 +25,6 @@ class BasketShare {
             error: document.getElementById(this.errorId),
             success: document.getElementById(this.successId),
         }
-        console.log(this.node)
 
         this.popup = null
 
@@ -29,6 +32,17 @@ class BasketShare {
     }
 
     init() {
+        if (this.moveButtonToBasket) {
+            for (const el of document.querySelectorAll(this.moveButtonPlaceSelector)) {
+                const newBtn = this.node.button.cloneNode(true);
+                el.append(newBtn)
+            }
+            this.node.button.remove()
+            this.node.button = []
+            for (const btn of document.querySelectorAll(`[data-entity=${this.buttonSelector}]`))
+                this.node.button.push(btn)
+        }
+
         this.initPopup()
         this.bindEvents()
     }
@@ -54,8 +68,8 @@ class BasketShare {
     }
 
     bindEvents() {
-        this.node.button
-            .addEventListener('click', this.onButtonClick.bind(this))
+        for (const el of this.node.button)
+            el.addEventListener('click', this.onButtonClick.bind(this))
 
         this.node.copyButton
             .addEventListener('click', this.onCopyClick.bind(this))
@@ -64,11 +78,9 @@ class BasketShare {
             this.node.closeButton
                 .addEventListener('click', this.onCloseClick.bind(this))
 
-
-        // if (this.popup && this.popup.overlay)
-        //     this.popup.overlay
-        //         .addEventListener('click', this.onCloseClick.bind(this))
-
+        if (this.popup && this.popup.overlay)
+            this.popup.overlay.element
+                .addEventListener('click', this.onCloseClick.bind(this))
     }
 
     onButtonClick(event) {

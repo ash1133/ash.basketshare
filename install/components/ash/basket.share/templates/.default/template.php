@@ -22,8 +22,8 @@ $this->setFrameMode(true);
 $arParams['POPUP_ID'] = htmlspecialcharsbx($arParams['POPUP_ID']);
 ?>
 
-<div class="basket-share-container">
-    <button id="<?= $arParams['POPUP_ID'] ?>-button" class="basket-share-button">
+<div class="basket-share-container" data-entity="<?= $arParams['POPUP_ID'] ?>-button-container">
+    <button data-entity="<?= $arParams['POPUP_ID'] ?>-button" class="basket-share-button">
         <?= Loc::getMessage('BASKET_SHARE_BUTTON_TEXT') ?>
     </button>
 </div>
@@ -58,7 +58,12 @@ $arParams['POPUP_ID'] = htmlspecialcharsbx($arParams['POPUP_ID']);
         var basketShare = new BasketShare({
             componentPath: '<?= CUtil::JSEscape($componentPath) ?>',
             popupId: '<?= CUtil::JSEscape($arParams['POPUP_ID']) ?>',
-            buttonId: '<?= CUtil::JSEscape("{$arParams['POPUP_ID']}-button")?>',
+
+            moveButtonToBasket: <?= $arParams['INCLUDE_IN_BASKET'] == 'Y' ? 'true' : 'false' ?>,
+            moveButtonPlaceSelector: '<?= $arParams['INCLUDE_IN_BASKET'] == 'Y' ? $arParams['INCLUDE_IN_BASKET_SELECTOR'] : '' ?>',
+
+            buttonSelector: '<?= CUtil::JSEscape("{$arParams['POPUP_ID']}-button")?>',
+            buttonContainerSelector: '<?= CUtil::JSEscape("{$arParams['POPUP_ID']}-button-container")?>',
             linkInputId: '<?= CUtil::JSEscape("{$arParams['POPUP_ID']}-link")?>',
             copyButtonId: '<?= CUtil::JSEscape("{$arParams['POPUP_ID']}-copy")?>',
             closeButtonId: '<?= CUtil::JSEscape("{$arParams['POPUP_ID']}-close")?>',
