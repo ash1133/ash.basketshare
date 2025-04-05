@@ -6,7 +6,7 @@ use Bitrix\Main\HttpApplication;
 use Bitrix\Main\Loader;
 use Bitrix\Main\Config\Option;
 
-$module_id = 'ash.basketshare'; 
+$module_id = 'ash.basketshare';
 
 Loc::loadMessages(__FILE__);
 Loader::includeModule($module_id);
