@@ -4,10 +4,10 @@
 
 У модуля предусмотрены события 
 
--***OnBeforeCreateShareLink***
--***OnAfterCreateShareLink***
--****OnBeforeApplySharedBasket****
--***OnAfterApplySharedBasket***
+- ***OnBeforeCreateShareLink***
+- ***OnAfterCreateShareLink***
+- ****OnBeforeApplySharedBasket****
+- ***OnAfterApplySharedBasket***
 
 
 ** Код для вставки компонента "Поделиться корзиной" **
