@@ -36,7 +36,7 @@ _нап: .basket-checkout-block-btn, .basket-items-list-header-filter встав
 
 ## Код для вставки компонента "Поделиться корзиной"
 
-``
+```php
 <?$APPLICATION->IncludeComponent(
 	"ash:basket.share",
 	".default",
@@ -49,6 +49,6 @@ _нап: .basket-checkout-block-btn, .basket-items-list-header-filter встав
 		"POPUP_ID" => "basket-share-popup"
 	)
 );?>
-``
+```
 
 Код толком не причесан, но врятли кто-то будет до этого места будет читать
