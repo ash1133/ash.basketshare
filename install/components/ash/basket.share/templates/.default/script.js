@@ -68,8 +68,13 @@ class BasketShare {
     }
 
     bindEvents() {
-        for (const el of this.node.button)
-            el.addEventListener('click', this.onButtonClick.bind(this))
+        if (this.moveButtonToBasket)
+            for (const el of this.node.button)
+                el.addEventListener('click', this.onButtonClick.bind(this))
+        else
+            this.node.button
+                .addEventListener('click', this.onButtonClick.bind(this))
+
 
         this.node.copyButton
             .addEventListener('click', this.onCopyClick.bind(this))
