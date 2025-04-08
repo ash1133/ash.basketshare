@@ -1,4 +1,5 @@
 <?php
+
 namespace Ash\BasketShare\Traits;
 
 use Bitrix\Main\Config\Option;

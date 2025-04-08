@@ -1,8 +1,7 @@
 <?php
+//require_once __DIR__ . '/../lib/BasketShareHLBlock.php';
 
 use Ash\BasketShare\BasketShareHLBlock;
-use Ash\BasketShare\Traits\ShortLinkGeneratorTrait;
-use Bitrix\Highloadblock\HighloadBlockTable;
 use Bitrix\Main\Application;
 use Bitrix\Main\Config\Option;
 use Bitrix\Main\EventManager;
@@ -60,6 +59,7 @@ class ash_basketshare extends CModule
         }
 
         ModuleManager::registerModule($this->MODULE_ID);
+
         $this->InstallFiles();
         $this->InstallDB();
         $this->InstallEvents();
@@ -85,7 +85,10 @@ class ash_basketshare extends CModule
             $this->UnInstallEvents();
             $this->UnInstallFiles();
 
-            if ($request['save_data'] !== 'Y') {
+            if (
+                $request['save_data'] !== 'Y'
+                && Loader::includeModule($this->MODULE_ID)
+            ) {
                 $this->UnInstallDB();
             }
 
@@ -114,18 +117,14 @@ class ash_basketshare extends CModule
 
     public function InstallDB()
     {
-        if (
-            Loader::includeModule('highloadblock')
-            && Loader::includeModule('ash.basketshare')
-        ) {
-            Option::set($this->MODULE_ID, 'hlblock_name', $this->HLBlockName);
-            Option::set($this->MODULE_ID, 'hlblock_table_name', $this->HLBlockTableName);
+        Option::set($this->MODULE_ID, 'hlblock_name', $this->HLBlockName);
+        Option::set($this->MODULE_ID, 'hlblock_table_name', $this->HLBlockTableName);
 
-            $result = BasketShareHLBlock::createHLBlock();
+        if (Loader::includeModule($this->MODULE_ID)) {
+            $result = BasketShareHLBlock::create();
 
-            if ($result) {
+            if ($result)
                 Option::set($this->MODULE_ID, 'hlblock_id', $result);
-            }
         }
 
         // Установка опций модуля
@@ -137,8 +136,7 @@ class ash_basketshare extends CModule
 
     public function UnInstallDB()
     {
-        if (Loader::includeModule('highloadblock'))
-            BasketShareHLBlock::deleteHLBlock();
+        BasketShareHLBlock::delete();
 
         Option::delete($this->MODULE_ID);
 

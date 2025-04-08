@@ -1,38 +1,40 @@
 <?php
+
 namespace Ash\BasketShare;
 
+use Ash\BasketShare\Interfaces\BasketSharedEventInterface;
 use Ash\BasketShare\Traits\ShortLinkGeneratorTrait;
 use Bitrix\Main\Loader;
 use Bitrix\Main\Config\Option;
 use Bitrix\Main\Context;
+use Bitrix\Main\ObjectNotFoundException;
 use Bitrix\Sale\Basket;
 use Bitrix\Sale\BasketBase;
 use Bitrix\Sale\BasketItem;
 use Bitrix\Sale\Fuser;
+use Psr\Container\NotFoundExceptionInterface;
 
 class BasketShareManager extends Base\BasketShareBase
 {
     use ShortLinkGeneratorTrait;
 
-    /**
-     * Обработчик события OnPageStart для проверки перехода по короткой ссылке
-     */
-    public static function onPageStart()
-    {
-        $linkId = self::getIdByUri();
-        if (
-            $linkId
-            && Loader::includeModule('sale')
-            && Loader::includeModule(self::MODULE_ID)
-        ) {
-            self::applySharedBasket($linkId);
-        }
+    protected BasketBase $basket;
+    protected mixed $handler;
+
+    public function __construct(){
+        \Bitrix\Main\DI\ServiceLocator::getInstance()->addInstance(
+            BasketSharedEventInterface::class,
+            new BasketShareEvent()
+        );
+
+        $this->handler = \Bitrix\Main\DI\ServiceLocator::getInstance()
+            ->get(BasketSharedEventInterface::class);
     }
 
     /**
      * Добавление товаров из сохраненной корзины в корзину текущего пользователя
      */
-    public static function applySharedBasket(int $linkId): bool
+    public function applySharedBasket(int $linkId): bool
     {
         // Получаем данные сохраненной корзины
         $basketData = BasketShareHLBlock::getBasketByLinkId($linkId);
@@ -60,12 +62,12 @@ class BasketShareManager extends Base\BasketShareBase
         }
 
         // Создаем событие перед применением корзины
-        BasketShareEvent::onBeforeApplySharedBasket($linkId, $basketItems);
+        $this->handler::onBeforeApplySharedBasket($linkId, $basketItems);
 
         if ($basketItems) {
             // Добавляем товары в корзину текущего пользователя
             $fuserId = Fuser::getId();
-            $basket = Basket::loadItemsForFUser($fuserId, Context::getCurrent()->getSite());
+            $this->basket = Basket::loadItemsForFUser($fuserId, Context::getCurrent()->getSite());
 
             foreach ($basketItems as $item) {
                 if (isset($item['PRODUCT_ID']) && $item['PRODUCT_ID'] > 0) {
@@ -76,10 +78,10 @@ class BasketShareManager extends Base\BasketShareBase
                     /**
                      * @var $existItem BasketItem
                      */
-                    if ($existItem = self::GetExistsBasketItem($basket, $item['PRODUCT_ID']))
+                    if ($existItem = $this->GetExistsBasketItem($item['PRODUCT_ID']))
                         $existItem->setField('QUANTITY', $quantity);
                     else {
-                        $basketItem = $basket->createItem('catalog', $item['PRODUCT_ID']);
+                        $basketItem = $this->basket->createItem('catalog', $item['PRODUCT_ID']);
                         $basketItem->setFields([
                             'QUANTITY' => $quantity,
                             'LID' => Context::getCurrent()->getSite(),
@@ -94,10 +96,10 @@ class BasketShareManager extends Base\BasketShareBase
                 }
             }
 
-            $basket->save();
+            $this->basket->save();
 
             // Создаем событие после применения корзины
-            BasketShareEvent::onAfterApplySharedBasket($linkId, $basketItems, $fuserId);
+            $this->handler::onAfterApplySharedBasket($linkId, $basketItems, $fuserId);
 
             return true;
         }
@@ -106,41 +108,9 @@ class BasketShareManager extends Base\BasketShareBase
     }
 
     /**
-     * @param Basket $basket
-     * @param int $productId
-     * @param string $moduleId
-     * @return BasketItem|bool
-     */
-    protected static function GetExistsBasketItem(
-        BasketBase $basket,
-        int $productId,
-        string $moduleId = 'catalog'
-    ): BasketItem | bool
-    {
-        $result = false;
-        if(
-            !empty($productId)
-            && (intval($productId)>0)
-            && (intval($productId)==$productId)
-            && ($moduleId!='')
-        ){
-            foreach ($basket as $item) {
-                if(
-                    $productId == $item->getProductId()
-                    && ($item->getField('MODULE') == $moduleId)
-                ){
-                    $result = $item;
-                    break;
-                }
-            }
-        }
-        return $result;
-    }
-
-    /**
      * Создание короткой ссылки для корзины
      */
-    public static function createShareLink(): int | bool
+    public function createShareLink(): int | bool
     {
         if (
             !Loader::includeModule('sale')
@@ -184,7 +154,7 @@ class BasketShareManager extends Base\BasketShareBase
         if (!$linkId) {
 
             // Создаем событие перед созданием ссылки
-            BasketShareEvent::onBeforeCreateShareLink($basketItems, $fuserId);
+            $this->handler::onBeforeCreateShareLink($basketItems, $fuserId);
 
             if (empty($basketItems))
                 return false;
@@ -211,9 +181,56 @@ class BasketShareManager extends Base\BasketShareBase
             }
 
             // Создаем событие после создания ссылки
-            BasketShareEvent::onAfterCreateShareLink($basketItems, $fuserId, $linkId, $expireDate);
+            $this->handler::onAfterCreateShareLink($basketItems, $fuserId, $linkId, $expireDate);
         }
 
         return $linkId;
+    }
+
+    /**
+     * Обработчик события OnPageStart для проверки перехода по короткой ссылке
+     */
+    public static function onPageStart()
+    {
+        $linkId = self::getIdByUri();
+        if (
+            $linkId
+            && Loader::includeModule('sale')
+            && Loader::includeModule(self::MODULE_ID)
+        ) {
+            $instance = new self();
+            $instance->applySharedBasket($linkId);
+        }
+    }
+
+    /**
+     * @param Basket $basket
+     * @param int $productId
+     * @param string $moduleId
+     * @return BasketItem|bool
+     */
+    protected function GetExistsBasketItem(
+        int $productId,
+        string $moduleId = 'catalog'
+    ): BasketItem | bool
+    {
+        $result = false;
+        if(
+            !empty($productId)
+            && (intval($productId)>0)
+            && (intval($productId)==$productId)
+            && ($moduleId!='')
+        ){
+            foreach ($this->basket as $item) {
+                if(
+                    $productId == $item->getProductId()
+                    && ($item->getField('MODULE') == $moduleId)
+                ){
+                    $result = $item;
+                    break;
+                }
+            }
+        }
+        return $result;
     }
 }

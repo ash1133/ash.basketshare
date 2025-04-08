@@ -1,10 +1,12 @@
 <?php
+
 namespace Ash\BasketShare;
 
+use Ash\BasketShare\Interfaces\BasketSharedEventInterface;
 use Bitrix\Main\Event;
 use Bitrix\Main\EventResult;
 
-class BasketShareEvent extends Base\BasketShareBase
+class BasketShareEvent extends Base\BasketShareBase implements BasketSharedEventInterface
 {
     /**
      * Вызов события перед созданием ссылки
@@ -52,7 +54,7 @@ class BasketShareEvent extends Base\BasketShareBase
     /**
      * Вызов события перед применением корзины
      */
-    public static function onBeforeApplySharedBasket($linkId, &$basketItems)
+    public static function onBeforeApplySharedBasket($linkId, &$basketItems): void
     {
         $event = new Event(self::MODULE_ID, 'OnBeforeApplySharedBasket', [
             'link_id' => $linkId,
@@ -78,7 +80,7 @@ class BasketShareEvent extends Base\BasketShareBase
     /**
      * Вызов события после применения корзины
      */
-    public static function onAfterApplySharedBasket($linkId, $basketItems, $fuserId)
+    public static function onAfterApplySharedBasket($linkId, $basketItems, $fuserId): void
     {
         $event = new Event(self::MODULE_ID, 'OnAfterApplySharedBasket', [
             'link_id' => $linkId,
